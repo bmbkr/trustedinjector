@@ -4,6 +4,7 @@
 #include <time.h>
 #include <assert.h>
 #include <utility>
+#include <string>
 
 void randomizeConsoleTitle()
 {
@@ -62,7 +63,7 @@ static const std::pair<const char *, const char *> hooks[17] = {
 };
 
 void disableTrustedHooks(HANDLE csgo) {
-	printf("Bypassing trusted mode hooks.z\n");
+	printf("Bypassing trusted mode hooks.\n");
 	for (size_t i = 0; i < 17; i++) {
 		byte goodBytes[6];
 		LPVOID address = GetProcAddress(LoadLibrary(hooks[i].second), hooks[i].first);
@@ -81,16 +82,23 @@ int main(size_t argc, char **argv) {
 	randomizeConsoleTitle();
 
 	if (argc < 2) {
-		error("DLL path was not specified.");
+		error("No subcommands specified.");
 	}
 
+	bool shouldInject = true;
+
 	if (fileExists(argv[1]) == false) {
-		error("Failed to open DLL.");
+		if (std::string("bypass") != argv[1]) {
+			error("Failed to open DLL.");
+		}
+		shouldInject = false;
 	}
 
 	char dllPath[MAX_PATH];
-	GetFullPathName(argv[1], MAX_PATH, dllPath, NULL);
-	printf("Using DLL at '%s'\n", dllPath);
+	if (shouldInject) {
+		GetFullPathName(argv[1], MAX_PATH, dllPath, NULL);
+		printf("Using DLL at '%s'\n", dllPath);
+	}
 
 	HWND wndProc = FindWindowA("VALVE001", "Counter-Strike: Global Offensive");
 	if (wndProc == NULL) {
@@ -115,16 +123,19 @@ int main(size_t argc, char **argv) {
 
 	disableTrustedHooks(csgo);
 
-	printf("Injecting DLL into CS:GO.\n");
+	if (shouldInject) {
+		printf("Injecting DLL into CS:GO.\n");
 
-	// Load the dll and call LoadLibrary from the process :yawn:
-	LPVOID allocatedMem = VirtualAllocEx(csgo, NULL, sizeof(dllPath), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-	WriteProcessMemory(csgo, allocatedMem, dllPath, sizeof(dllPath), NULL);
-	HANDLE hThread = CreateRemoteThread(csgo, 0, 0, (LPTHREAD_START_ROUTINE)LoadLibrary, allocatedMem, 0, 0);
-	printf("DLL Injected.\n");
+		// Load the dll and call LoadLibrary from the process :yawn:
+		LPVOID allocatedMem = VirtualAllocEx(csgo, NULL, sizeof(dllPath), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+		WriteProcessMemory(csgo, allocatedMem, dllPath, sizeof(dllPath), NULL);
+		HANDLE hThread = CreateRemoteThread(csgo, 0, 0, (LPTHREAD_START_ROUTINE)LoadLibrary, allocatedMem, 0, 0);
+		printf("DLL Injected.\n");
 
-	// We done.
-	CloseHandle(hThread);
+		// We done.
+		CloseHandle(hThread);
+	}
+
 	CloseHandle(csgo);
 	return 0;
 }
