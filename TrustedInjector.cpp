@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <utility>
 #include <string>
+#include <vector>
 
 void randomizeConsoleTitle()
 {
@@ -42,37 +43,51 @@ void printBytes(uint8_t *bytes, size_t size) {
 	printf("\n");
 }
 
-static const std::pair<const char *, const char *> hooks[17] = {
-	{"LoadLibraryExW","kernel32"},
-	{"VirtualAlloc", "kernel32"},
-	{"FreeLibrary", "kernel32"},
-	{"LoadLibraryExA", "kernel32"},
-	{"LoadLibraryW", "kernel32"},
-	{"LoadLibraryA", "kernel32"},
-	{"VirtualAllocEx", "kernel32"},
-	{"LdrLoadDll", "ntdll"},
-	{"NtOpenFile", "ntdll"},
-	{"VirtualProtect", "kernel32"},
-	{"CreateProcessW", "kernel32"},
-	{"CreateProcessA", "kernel32"},
-	{"VirtualProtectEx", "kernel32"},
-	{"FreeLibrary", "KernelBase"},
-	{"LoadLibraryExA", "KernelBase"},
-	{"LoadLibraryExW", "KernelBase"},
-	{"ResumeThread", "KernelBase"}
+static const char *dllsToCheck[3] = {
+	"kernel32",
+	"ntdll",
+	"KernelBase"
 };
+
+std::vector<std::string> getExportedFunctions(const char *dllName) {
+	HMODULE hLibrary = LoadLibraryEx(dllName, NULL, DONT_RESOLVE_DLL_REFERENCES);
+	if (hLibrary == 0)
+		return {};
+	
+	BYTE *pLibraryBase = reinterpret_cast<BYTE *>(hLibrary);
+	
+	PIMAGE_NT_HEADERS header = reinterpret_cast<PIMAGE_NT_HEADERS>(pLibraryBase + reinterpret_cast<PIMAGE_DOS_HEADER>(hLibrary)->e_lfanew);
+	
+	PIMAGE_EXPORT_DIRECTORY exports = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>(pLibraryBase + header->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress);
+	
+	BYTE **functionNames = reinterpret_cast<BYTE **>(pLibraryBase + exports->AddressOfNames);
+
+	std::vector<std::string> exportedFunctions;
+	for (size_t i = 0; i < exports->NumberOfNames; i++) {
+		std::string functionName = reinterpret_cast<char *>(pLibraryBase + reinterpret_cast<unsigned long long>(functionNames[i]));
+		exportedFunctions.push_back(functionName);
+	}
+
+	return exportedFunctions;
+}
 
 void disableTrustedHooks(HANDLE csgo) {
 	printf("Bypassing trusted mode hooks.\n");
-	for (size_t i = 0; i < 17; i++) {
-		byte goodBytes[6];
-		LPVOID address = GetProcAddress(LoadLibrary(hooks[i].second), hooks[i].first);
-		memcpy(goodBytes, address, 6);
-		byte csgoBytes[6];
-		ReadProcessMemory(csgo, address, csgoBytes, 6, NULL);
-		if (csgoBytes[0] == 0xe9) {
-			WriteProcessMemory(csgo, address, goodBytes, 6, NULL);
-			printf("Disabled %s hook.\n", hooks[i].first);
+	for (size_t i = 0; i < 3; i++) {
+		std::vector<std::string> functionNames = getExportedFunctions(dllsToCheck[i]);
+		for (const std::string &functionName : functionNames) {
+			LPVOID pAddress = GetProcAddress(LoadLibrary(dllsToCheck[i]), functionName.c_str());
+			uint8_t cleanBytes[5];
+			memcpy(cleanBytes, pAddress, 5);
+			uint8_t dirtyBytes[5];
+			ReadProcessMemory(csgo, pAddress, dirtyBytes, 5, NULL);
+
+			// If the good version doesnt match the game version, then csgo is hooking it...
+			if (cleanBytes[0] != dirtyBytes[0]) {
+				// Overwrite the hook with our good version.
+				WriteProcessMemory(csgo, pAddress, cleanBytes, 5, NULL);
+				printf("Disabled %s hook.\n", functionName.c_str());
+			}
 		}
 	}
 }
@@ -82,7 +97,7 @@ int main(size_t argc, char **argv) {
 	randomizeConsoleTitle();
 
 	if (argc < 2) {
-		error("No subcommands specified.");
+		error("No subcommands specified.\n\nUsage:\n    ./TrustedInjector.exe bypass\n    - or -\n    ./TrustedInjector.exe <path to dll file>\n");
 	}
 
 	bool shouldInject = true;
@@ -110,10 +125,6 @@ int main(size_t argc, char **argv) {
 	if (csgoPid == NULL) {
 		error("Failed to get CS:GO's PID.");
 	}
-
-	// Gets the address of NtOpenFile relative to ntdll. 
-	// This offset is always going to be the same relative to the base address of any process.
-	LPVOID ntOpenFile = GetProcAddress(GetModuleHandle("ntdll.dll"), "NtOpenFile");
 
 	// Get a handle to the game process.
 	HANDLE csgo = OpenProcess(PROCESS_ALL_ACCESS, FALSE, csgoPid);
