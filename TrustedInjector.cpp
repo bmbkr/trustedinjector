@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <assert.h>
+#include <utility>
 
 void randomizeConsoleTitle()
 {
@@ -38,6 +39,41 @@ void printBytes(uint8_t *bytes, size_t size) {
 		printf("%02x ", bytes[i]);
 	}
 	printf("\n");
+}
+
+static const std::pair<const char *, const char *> hooks[17] = {
+	{"LoadLibraryExW","kernel32"},
+	{"VirtualAlloc", "kernel32"},
+	{"FreeLibrary", "kernel32"},
+	{"LoadLibraryExA", "kernel32"},
+	{"LoadLibraryW", "kernel32"},
+	{"LoadLibraryA", "kernel32"},
+	{"VirtualAllocEx", "kernel32"},
+	{"LdrLoadDll", "ntdll"},
+	{"NtOpenFile", "ntdll"},
+	{"VirtualProtect", "kernel32"},
+	{"CreateProcessW", "kernel32"},
+	{"CreateProcessA", "kernel32"},
+	{"VirtualProtectEx", "kernel32"},
+	{"FreeLibrary", "KernelBase"},
+	{"LoadLibraryExA", "KernelBase"},
+	{"LoadLibraryExW", "KernelBase"},
+	{"ResumeThread", "KernelBase"}
+};
+
+void disableTrustedHooks(HANDLE csgo) {
+	printf("Bypassing trusted mode hooks.z\n");
+	for (size_t i = 0; i < 17; i++) {
+		byte goodBytes[6];
+		LPVOID address = GetProcAddress(LoadLibrary(hooks[i].second), hooks[i].first);
+		memcpy(goodBytes, address, 6);
+		byte csgoBytes[6];
+		ReadProcessMemory(csgo, address, csgoBytes, 6, NULL);
+		if (csgoBytes[0] == 0xe9) {
+			WriteProcessMemory(csgo, address, goodBytes, 6, NULL);
+			printf("Disabled %s hook.\n", hooks[i].first);
+		}
+	}
 }
 
 int main(size_t argc, char **argv) {
@@ -77,20 +113,7 @@ int main(size_t argc, char **argv) {
 		error("Failed to open handle to CS:GO.");
 	}
 
-	// Grab the hooked version of NtOpenFile from CS:GO's memory.
-	uint8_t dirtyNtOpenFile[5];
-	ReadProcessMemory(csgo, ntOpenFile, dirtyNtOpenFile, 5, NULL);
-
-	// Get a clean version of NtOpenFile without any hooks.
-	uint8_t cleanNtOpenFile[5];
-	memcpy(cleanNtOpenFile, ntOpenFile, 5);
-
-	// Is the first byte of CS:GO's NtOpenFile a JMP instruction?
-	if (dirtyNtOpenFile[0] == 0xE9) {
-		printf("Disabling CS:GO's NtOpenFile hook.\n");
-		// Replace CS:GO's hooked NtOpenFile with a non-hooked one.
-		WriteProcessMemory(csgo, ntOpenFile, cleanNtOpenFile, 5, NULL);
-	}
+	disableTrustedHooks(csgo);
 
 	printf("Injecting DLL into CS:GO.\n");
 
