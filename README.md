@@ -2,7 +2,7 @@
 This is a LoadLibrary injector for Counter-Strike: Global Offensive.
 
 ## Information
-It automatically bypasses trusted mode by removing the hook on `NtOpenFile`.
+It automatically bypasses trusted mode by removing hooks on various Win32 functions.
 
 ## Usage
  - Open CS:GO
@@ -11,7 +11,7 @@ It automatically bypasses trusted mode by removing the hook on `NtOpenFile`.
  - Profit?
 
 ## Compiling
-I used Visual Studio 2022 for this, so compile with that.
+I used Visual Studio 2022, so compile with that in x86 mode.
 
 ## Credits
  - me (lol)
