@@ -100,7 +100,7 @@ int main(size_t argc, char **argv) {
 	HANDLE hThread = CreateRemoteThread(csgo, 0, 0, (LPTHREAD_START_ROUTINE)LoadLibrary, allocatedMem, 0, 0);
 	printf("DLL Injected.\n");
 
-	// We gone.
+	// We done.
 	CloseHandle(hThread);
 	CloseHandle(csgo);
 	return 0;
