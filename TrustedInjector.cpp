@@ -137,6 +137,9 @@ int main(size_t argc, char **argv) {
 	if (shouldInject) {
 		printf("Injecting DLL into CS:GO.\n");
 
+		// Send unhook message for supported cheats.
+		SendMessage(wndProc, WM_NULL, 0xC560, 0x0D11);
+
 		// Load the dll and call LoadLibrary from the process :yawn:
 		LPVOID allocatedMem = VirtualAllocEx(csgo, NULL, sizeof(dllPath), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 		WriteProcessMemory(csgo, allocatedMem, dllPath, sizeof(dllPath), NULL);
