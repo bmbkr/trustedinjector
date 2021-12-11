@@ -6,6 +6,7 @@
 #include <utility>
 #include <string>
 #include <vector>
+#include <Psapi.h>
 
 void randomizeConsoleTitle()
 {
@@ -115,7 +116,7 @@ int main(size_t argc, char **argv) {
 		printf("Using DLL at '%s'\n", dllPath);
 	}
 
-	HWND wndProc = FindWindowA("VALVE001", "Counter-Strike: Global Offensive");
+	HWND wndProc = FindWindowA("VALVE001", NULL);
 	if (wndProc == NULL) {
 		error("Failed to get wndProc. Is CS:GO open?");
 	}
@@ -130,6 +131,15 @@ int main(size_t argc, char **argv) {
 	HANDLE csgo = OpenProcess(PROCESS_ALL_ACCESS, FALSE, csgoPid);
 	if (csgo == NULL) {
 		error("Failed to open handle to CS:GO.");
+	}
+
+	char procNameBuffer[MAX_PATH];
+	GetProcessImageFileNameA(csgo, procNameBuffer, MAX_PATH);
+	char *exeName = strrchr(procNameBuffer, '\\') + 1;
+	if (strcmp(exeName, "csgo.exe") != 0) {
+		CloseHandle(csgo);
+		printf("Opened handle to exe file: %s\n", exeName);
+		error("Opened process didn't appear to be CS:GO.");;
 	}
 
 	disableTrustedHooks(csgo);
