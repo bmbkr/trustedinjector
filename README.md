@@ -1,3 +1,7 @@
+<div align="center">
+  <strong>IMPORTANT: This injector is NOT VAC-Safe! You have been warned!<strong>
+</div>
+   
 # TrustedInjector
 This is a LoadLibrary injector for Counter-Strike: Global Offensive.
 
