@@ -6,7 +6,9 @@
 This is a LoadLibrary injector for Counter-Strike: Global Offensive.
 
 ## Information
-It automatically bypasses trusted mode by removing hooks on various Win32 functions.
+It automatically bypasses trusted mode by removing hooks on various Win32 functions. 
+
+> I made this because KittenPopo's CSGhost doesn't support command line parameters, such a simple thing to implement but oh well...
 
 ## Usage
 To inject a DLL, bypassing trusted mode automatically.
