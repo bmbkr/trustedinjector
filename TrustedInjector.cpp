@@ -100,6 +100,9 @@ int main(size_t argc, char **argv) {
 	if (argc < 2) {
 		error("No subcommands specified.\n\nUsage:\n    ./TrustedInjector.exe bypass\n    - or -\n    ./TrustedInjector.exe <path to dll file>\n");
 	}
+	
+	// Send unhook message for supported cheats.
+	SendMessage(wndProc, WM_NULL, 0xC560, 0x0D11);
 
 	bool shouldInject = true;
 
@@ -141,10 +144,6 @@ int main(size_t argc, char **argv) {
 		printf("Opened handle to exe file: %s\n", exeName);
 		error("Opened process didn't appear to be CS:GO.");;
 	}
-	
-	// Send unhook message for supported cheats.
-	SendMessage(wndProc, WM_NULL, 0xC560, 0x0D11);
-	Sleep(1000);
 
 	disableTrustedHooks(csgo);
 
