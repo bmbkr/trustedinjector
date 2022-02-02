@@ -100,10 +100,15 @@ int main(size_t argc, char **argv) {
 	if (argc < 2) {
 		error("No subcommands specified.\n\nUsage:\n    ./TrustedInjector.exe bypass\n    - or -\n    ./TrustedInjector.exe <path to dll file>\n");
 	}
-	
-	// Send unhook message for supported cheats.
-	SendMessage(wndProc, WM_NULL, 0xC560, 0x0D11);
 
+	HWND wndProc = FindWindowA("VALVE001", NULL);
+	if (wndProc == NULL) {
+		error("Failed to get wndProc. Is CS:GO open?");
+	}
+
+	// Send unhook message for supported cheats.
+	SendMessage(wndProc, WM_NULL, 0xC560, 0x0D11); 
+	
 	bool shouldInject = true;
 
 	if (fileExists(argv[1]) == false) {
@@ -117,11 +122,6 @@ int main(size_t argc, char **argv) {
 	if (shouldInject) {
 		GetFullPathName(argv[1], MAX_PATH, dllPath, NULL);
 		printf("Using DLL at '%s'\n", dllPath);
-	}
-
-	HWND wndProc = FindWindowA("VALVE001", NULL);
-	if (wndProc == NULL) {
-		error("Failed to get wndProc. Is CS:GO open?");
 	}
 
 	DWORD csgoPid;
