@@ -1,7 +1,6 @@
 <div align="center">
   <strong>IMPORTANT: This injector is NOT VAC-Safe! You have been warned!<strong>
     <br/>
-  ![16ab986c-2e92-434c-9726-7636ebfe1be0](https://user-images.githubusercontent.com/72025514/172918787-f3763500-46f8-479d-b342-682754b8b8f8.png)
 </div>
    
 # TrustedInjector
@@ -27,3 +26,7 @@ I used Visual Studio 2022, so compile with that in x86 mode.
 
 ## Credits
  - me (lol)
+
+<div align="center">
+  <img style="margin-top: 1rem;" src="https://user-images.githubusercontent.com/72025514/172918787-f3763500-46f8-479d-b342-682754b8b8f8.png" alt="16ab986c-2e92-434c-9726-7636ebfe1be0"/>  
+</div>
